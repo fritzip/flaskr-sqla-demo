@@ -1,46 +1,29 @@
-import functools
-
 from flask import Blueprint
 from flask import flash
-from flask import g
 from flask import redirect
 from flask import render_template
 from flask import request
-from flask import session
 from flask import url_for
+
+from flask_login import login_user, logout_user, login_required
 from werkzeug.security import check_password_hash
 from werkzeug.security import generate_password_hash
 
-from .db import get_db
+from flaskr.extensions import db, login_manager
+from flaskr.models.user import User
+
 
 bp = Blueprint("auth", __name__, url_prefix="/auth")
 
 
-def login_required(view):
-    """View decorator that redirects anonymous users to the login page."""
-
-    @functools.wraps(view)
-    def wrapped_view(**kwargs):
-        if g.user is None:
-            return redirect(url_for("auth.login"))
-
-        return view(**kwargs)
-
-    return wrapped_view
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(user_id)
 
 
-@bp.before_app_request
-def load_logged_in_user():
-    """If a user id is stored in the session, load the user object from
-    the database into ``g.user``."""
-    user_id = session.get("user_id")
-
-    if user_id is None:
-        g.user = None
-    else:
-        g.user = (
-            get_db().execute("SELECT * FROM user WHERE id = ?", (user_id,)).fetchone()
-        )
+@login_manager.unauthorized_handler
+def unauthorized_callback():
+    return redirect(url_for("auth.login"))
 
 
 @bp.route("/register", methods=("GET", "POST"))
@@ -53,7 +36,6 @@ def register():
     if request.method == "POST":
         username = request.form["username"]
         password = request.form["password"]
-        db = get_db()
         error = None
 
         if not username:
@@ -63,12 +45,10 @@ def register():
 
         if error is None:
             try:
-                db.execute(
-                    "INSERT INTO user (username, password) VALUES (?, ?)",
-                    (username, generate_password_hash(password)),
-                )
-                db.commit()
-            except db.IntegrityError:
+                new_user = User(username=username, password=generate_password_hash(password))
+                db.session.add(new_user)
+                db.session.commit()
+            except:
                 # The username was already taken, which caused the
                 # commit to fail. Show a validation error.
                 error = f"User {username} is already registered."
@@ -87,21 +67,17 @@ def login():
     if request.method == "POST":
         username = request.form["username"]
         password = request.form["password"]
-        db = get_db()
         error = None
-        user = db.execute(
-            "SELECT * FROM user WHERE username = ?", (username,)
-        ).fetchone()
+        user = User.query.filter_by(username=username).first()
 
         if user is None:
             error = "Incorrect username."
-        elif not check_password_hash(user["password"], password):
+        elif not check_password_hash(user.password, password):
             error = "Incorrect password."
 
         if error is None:
             # store the user id in a new session and return to the index
-            session.clear()
-            session["user_id"] = user["id"]
+            login_user(user, remember=True)
             return redirect(url_for("index"))
 
         flash(error)
@@ -110,7 +86,7 @@ def login():
 
 
 @bp.route("/logout")
+@login_required
 def logout():
-    """Clear the current session, including the stored user id."""
-    session.clear()
+    logout_user()
     return redirect(url_for("index"))
