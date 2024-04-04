@@ -4,6 +4,8 @@ from flaskr.extensions import db
 
 from flaskr.models.post import Post
 from flaskr.models.user import User
+from flaskr.models.tag import Tag
+from flaskr.models.association_tables import post_tags
 
 
 def test_index(client, auth):
@@ -82,3 +84,30 @@ def test_delete(client, auth, app):
     with app.app_context():
         post = Post.query.get(1)
         assert post is None
+
+
+def test_create_with_tag(client, auth, app):
+    auth.login()
+    with app.app_context():
+        nb_tags_before = db.session.query(Tag).count()
+        client.post("/create", data={"title": "created", "body": "body", "tags": "new_tag1, new_tag2"})
+        nb_tags_after = db.session.query(Tag).count()
+        assert nb_tags_after == nb_tags_before + 2
+
+
+def test_update_with_tag(client, auth, app):
+    auth.login()
+    with app.app_context():
+        client.post("/1/update", data={"title": "updated", "body": "body", "tags": "new_tag1, new_tag2, new_tag3"})
+        assert len(db.session.query(Post).get(1).tags) == 3
+
+
+def test_delete_with_tag(client, auth, app):
+    auth.login()
+    with app.app_context():
+        assert db.session.query(post_tags).count() > 0
+        client.post("/1/delete")
+        assert len(db.session.query(Tag).all()) == 3
+        assert db.session.query(post_tags).count() == 0
+        assert len(db.session.query(Post).all()) == 0
+        assert len(db.session.query(User).all()) == 2
