@@ -7,7 +7,7 @@ class Tag(db.Model):
     """A tag for a post."""
 
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String, nullable=False)
+    name = db.Column(db.String, nullable=False, unique=True)
     posts = db.relationship("Post", secondary="post_tags", back_populates="tags")
 
     def __repr__(self):
