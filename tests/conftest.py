@@ -9,6 +9,7 @@ from flaskr.extensions import db
 
 from flaskr.models.post import Post
 from flaskr.models.user import User
+from flaskr.models.tag import Tag
 
 
 @pytest.fixture(scope="function")
@@ -17,9 +18,9 @@ def app():
     db_fd, db_path = tempfile.mkstemp()
 
     # create the app with common test config
-    app = create_app(
-        {"TESTING": True, "DATABASE": db_path}
-    )  # Assuming you have a create_app function to create your Flask app
+    app = create_app(config_name="test", db_uri=f"sqlite:///{db_path}")
+
+    # Assuming you have a create_app function to create your Flask app
     with app.app_context():
         db.create_all()
         u1 = User(
@@ -33,7 +34,13 @@ def app():
         )
         db.session.add(u2)
 
+        t1 = Tag(name="tag1")
+        t2 = Tag(name="tag2")
+        t3 = Tag(name="tag3")
         p1 = Post(title="test title", body="test\nbody", author_id=1, created_at=datetime(2018, 1, 1))
+        p1.tags.append(t1)
+        p1.tags.append(t2)
+        p1.tags.append(t3)
         db.session.add(p1)
 
         db.session.commit()
