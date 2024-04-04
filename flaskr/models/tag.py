@@ -12,3 +12,6 @@ class Tag(db.Model):
 
     def __repr__(self):
         return f"<Tag {self.name}>"
+
+    def __str__(self):
+        return self.name

@@ -10,7 +10,12 @@ body {
   background: white;
 }
 
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   font-family: serif;
   color: #377ba8;
   margin: 1rem 0;
@@ -42,14 +47,16 @@ nav h1 a {
   padding: 0.25rem 0.5rem;
 }
 
-nav ul  {
+nav ul {
   display: flex;
   list-style: none;
   margin: 0;
   padding: 0;
 }
 
-nav ul li a, nav ul li span, header .action {
+nav ul li a,
+nav ul li span,
+header .action {
   display: block;
   padding: 0.5rem;
 }
@@ -67,6 +74,17 @@ nav ul li a, nav ul li span, header .action {
 .content > header h1 {
   flex: auto;
   margin: 1rem 0 0.25rem 0;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  flex-direction: row;
+}
+
+.row > * {
+  margin: 0.2rem;
+  margin-left: 0;
 }
 
 .flash {
@@ -100,6 +118,14 @@ nav ul li a, nav ul li span, header .action {
   white-space: pre-line;
 }
 
+.tag {
+  background: #377ba8;
+  color: white;
+  border-radius: 0.5em;
+  padding: 0.25em 0.5em;
+  margin-right: 0.5em;
+}
+
 .content:last-child {
   margin-bottom: 0;
 }
@@ -115,7 +141,8 @@ nav ul li a, nav ul li span, header .action {
   margin-bottom: 0.5em;
 }
 
-.content input, .content textarea {
+.content input,
+.content textarea {
   margin-bottom: 1em;
 }
 
@@ -128,7 +155,7 @@ input.danger {
   color: #cc2f2e;
 }
 
-input[type=submit] {
+input[type="submit"] {
   align-self: start;
   min-width: 10em;
 }

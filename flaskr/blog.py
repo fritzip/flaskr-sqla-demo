@@ -11,6 +11,7 @@ from flask_login import login_required
 
 from flaskr.extensions import db
 from flaskr.models.post import Post
+from flaskr.models.tag import Tag
 
 bp = Blueprint("blog", __name__)
 
@@ -28,7 +29,14 @@ def create():
     """Create a new post for the current user."""
     if request.method == "POST":
         title = request.form["title"]
-        body = request.form["body"]
+        body = request.form.get("body", "")
+        tags = request.form.get("tags", "")
+        tag_list = []
+        for tag in tags.split(","):
+            tag = tag.strip()
+            if tag:
+                tag_list.append(tag)
+
         error = None
 
         if not title:
@@ -38,6 +46,8 @@ def create():
             flash(error)
         else:
             p = Post(title=title, body=body, author_id=current_user.id)
+            for tag in tag_list:
+                p.tags.append(Tag(name=tag))
             db.session.add(p)
             db.session.commit()
             return redirect(url_for("blog.index"))
@@ -56,7 +66,14 @@ def update(id):
         if post.author_id != current_user.id:
             abort(403)
         title = request.form["title"]
-        body = request.form["body"]
+        body = request.form.get("body", "")
+        tags = request.form.get("tags", "")
+        tag_list = []
+        for tag in tags.split(","):
+            tag = tag.strip()
+            if tag:
+                tag_list.append(tag)
+
         error = None
 
         if not title:
@@ -67,6 +84,9 @@ def update(id):
         else:
             post.title = title
             post.body = body
+            post.tags = []
+            for tag in tag_list:
+                post.tags.append(Tag(name=tag))
             db.session.commit()
             return redirect(url_for("blog.index"))
 
