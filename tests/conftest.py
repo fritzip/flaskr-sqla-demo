@@ -2,10 +2,13 @@ import os
 import tempfile
 
 import pytest
+from datetime import datetime
 
 from flaskr import create_app
-from flaskr.db import get_db
-from flaskr.db import init_db
+from flaskr.extensions import db
+
+from flaskr.models.post import Post
+from flaskr.models.user import User
 
 # read in SQL for populating test data
 with open(os.path.join(os.path.dirname(__file__), "data.sql"), "rb") as f:
@@ -22,8 +25,8 @@ def app():
 
     # create the database and load test data
     with app.app_context():
-        init_db()
-        get_db().executescript(_data_sql)
+        db.create_all()
+        db.engine.execute(_data_sql)
 
     yield app
 
@@ -32,10 +35,62 @@ def app():
     os.unlink(db_path)
 
 
-@pytest.fixture
+@pytest.fixture(scope="function")
+def app():
+    app = create_app()  # Assuming you have a create_app function to create your Flask app
+    with app.app_context():
+        db.create_all()
+        u1 = User(
+            username="test",
+            password="pbkdf2:sha256:50000$TCI4GzcX$0de171a4f4dac32e3364c7ddc7c14f3e2fa61f2d17574483f7ffbb431b4acb2f",
+        )
+        db.session.add(u1)
+        u2 = User(
+            username="other",
+            password="pbkdf2:sha256:50000$kJPKsz6N$d2d4784f1b030a9761f5ccaeeaca413f27f2ecb76d6168407af962ddce849f79",
+        )
+        db.session.add(u2)
+
+        p1 = Post(title="test title", body="test\nbody", author_id=1, created_at=datetime(2018, 1, 1))
+        db.session.add(p1)
+
+        db.session.commit()
+        yield app
+        db.session.remove()
+        db.drop_all()
+
+
+@pytest.fixture(scope="function")
 def client(app):
-    """A test client for the app."""
     return app.test_client()
+
+
+@pytest.fixture(scope="function")
+def session(app):
+    with app.app_context():
+        db.session.begin_nested()  # Start a nested transaction for each test
+        yield db.session
+        db.session.rollback()  # Rollback the nested transaction after each test
+
+
+@pytest.fixture(scope="function")
+def test_data(session):
+    # Create sample data for testing
+    u1 = User(
+        username="test",
+        password="pbkdf2:sha256:50000$TCI4GzcX$0de171a4f4dac32e3364c7ddc7c14f3e2fa61f2d17574483f7ffbb431b4acb2f",
+    )
+    db.session.add(u1)
+    u2 = User(
+        username="other",
+        password="pbkdf2:sha256:50000$kJPKsz6N$d2d4784f1b030a9761f5ccaeeaca413f27f2ecb76d6168407af962ddce849f79",
+    )
+    db.session.add(u2)
+
+    p1 = Post(title="test title", body="test\nbody", author_id=1, created_at=datetime(2018, 1, 1))
+    db.session.add(p1)
+
+    db.session.commit()
 
 
 @pytest.fixture
@@ -49,9 +104,7 @@ class AuthActions:
         self._client = client
 
     def login(self, username="test", password="test"):
-        return self._client.post(
-            "/auth/login", data={"username": username, "password": password}
-        )
+        return self._client.post("/auth/login", data={"username": username, "password": password})
 
     def logout(self):
         return self._client.get("/auth/logout")

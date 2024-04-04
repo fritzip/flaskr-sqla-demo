@@ -1,6 +1,9 @@
 import pytest
 
-from flaskr.db import get_db
+from flaskr.extensions import db
+
+from flaskr.models.post import Post
+from flaskr.models.user import User
 
 
 def test_index(client, auth):
@@ -19,15 +22,16 @@ def test_index(client, auth):
 @pytest.mark.parametrize("path", ("/create", "/1/update", "/1/delete"))
 def test_login_required(client, path):
     response = client.post(path)
+    assert response.status_code == 302
     assert response.headers["Location"] == "/auth/login"
 
 
 def test_author_required(app, client, auth):
     # change the post author to another user
     with app.app_context():
-        db = get_db()
-        db.execute("UPDATE post SET author_id = 2 WHERE id = 1")
-        db.commit()
+        p = Post.query.get(1)
+        p.author_id = 2
+        db.session.commit()
 
     auth.login()
     # current user can't modify other user's post
@@ -49,8 +53,7 @@ def test_create(client, auth, app):
     client.post("/create", data={"title": "created", "body": ""})
 
     with app.app_context():
-        db = get_db()
-        count = db.execute("SELECT COUNT(id) FROM post").fetchone()[0]
+        count = db.session.query(Post).count()
         assert count == 2
 
 
@@ -60,9 +63,8 @@ def test_update(client, auth, app):
     client.post("/1/update", data={"title": "updated", "body": ""})
 
     with app.app_context():
-        db = get_db()
-        post = db.execute("SELECT * FROM post WHERE id = 1").fetchone()
-        assert post["title"] == "updated"
+        post = Post.query.get(1)
+        assert post.title == "updated"
 
 
 @pytest.mark.parametrize("path", ("/create", "/1/update"))
@@ -78,6 +80,5 @@ def test_delete(client, auth, app):
     assert response.headers["Location"] == "/"
 
     with app.app_context():
-        db = get_db()
-        post = db.execute("SELECT * FROM post WHERE id = 1").fetchone()
+        post = Post.query.get(1)
         assert post is None

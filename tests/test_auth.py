@@ -1,8 +1,8 @@
 import pytest
-from flask import g
-from flask import session
+from flask_login import current_user
 
-from flaskr.db import get_db
+from flaskr.extensions import db
+from flaskr.models.user import User
 
 
 def test_register(client, app):
@@ -15,10 +15,7 @@ def test_register(client, app):
 
     # test that the user was inserted into the database
     with app.app_context():
-        assert (
-            get_db().execute("SELECT * FROM user WHERE username = 'a'").fetchone()
-            is not None
-        )
+        assert db.session.query(User).filter(User.username == "a").one() is not None
 
 
 @pytest.mark.parametrize(
@@ -30,9 +27,8 @@ def test_register(client, app):
     ),
 )
 def test_register_validate_input(client, username, password, message):
-    response = client.post(
-        "/auth/register", data={"username": username, "password": password}
-    )
+    response = client.post("/auth/register", data={"username": username, "password": password})
+    # search in flash messages
     assert message in response.data
 
 
@@ -48,8 +44,7 @@ def test_login(client, auth):
     # check that the user is loaded from the session
     with client:
         client.get("/")
-        assert session["user_id"] == 1
-        assert g.user["username"] == "test"
+        assert current_user.username == "test"
 
 
 @pytest.mark.parametrize(
@@ -66,4 +61,4 @@ def test_logout(client, auth):
 
     with client:
         auth.logout()
-        assert "user_id" not in session
+        assert current_user.is_anonymous
