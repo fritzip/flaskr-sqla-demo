@@ -1,5 +1,6 @@
 from datetime import datetime
 from flaskr.extensions import db
+from sqlalchemy.sql import func
 
 from flaskr.models.tag import Tag
 from flaskr.models.user import User
@@ -13,9 +14,9 @@ class Post(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(140))
     body = db.Column(db.String(300))
-    author_id = db.Column(db.Integer, db.ForeignKey("user.id"))
-    created_at = db.Column(db.DateTime, default=datetime.now)
-    updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
+    author_id = db.Column(db.Integer, db.ForeignKey("user.id", ondelete="SET NULL"))
+    created_at = db.Column(db.DateTime, default=func.now())
+    updated_at = db.Column(db.DateTime, default=func.now(), onupdate=func.now())
 
     author = db.relationship("User", back_populates="posts")
     tags = db.relationship("Tag", secondary=post_tags, back_populates="posts")

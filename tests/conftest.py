@@ -22,6 +22,7 @@ def app():
 
     # Assuming you have a create_app function to create your Flask app
     with app.app_context():
+        db.drop_all()
         db.create_all()
         u1 = User(
             username="test",
@@ -34,19 +35,22 @@ def app():
         )
         db.session.add(u2)
 
+        p1 = Post(title="test title", body="test\nbody", author_id=1, created_at=datetime(2018, 1, 1))
+        p2 = Post(title="post2", body="body2", author_id=1, created_at=datetime(2018, 1, 1))
         t1 = Tag(name="tag1")
         t2 = Tag(name="tag2")
-        t3 = Tag(name="tag3")
-        p1 = Post(title="test title", body="test\nbody", author_id=1, created_at=datetime(2018, 1, 1))
         p1.tags.append(t1)
         p1.tags.append(t2)
-        p1.tags.append(t3)
+        p2.tags.append(t2)
         db.session.add(p1)
+        db.session.add(p2)
+
+        t3 = Tag(name="tag3")
+        db.session.add(t3)
 
         db.session.commit()
         yield app
         db.session.remove()
-        db.drop_all()
 
     # close and remove the temporary database
     os.close(db_fd)

@@ -1,0 +1,30 @@
+[project]
+name = "flaskr-sqlalchemy"
+version = "1.0.0"
+description = "The basic blog app built in the Flask tutorial with SQLAlchemy."
+readme = "README.md"
+license = {text = "BSD-3-Clause"}
+maintainers = [{name = "Maxime Sainlot", email = "maxime.sainlot@gmail.com"}]
+dependencies = [
+    "flask",
+    "flask-sqlalchemy",
+    "flask-migrate",
+    "flask-login",
+]
+
+[project.urls]
+Documentation = "https://flask.palletsprojects.com/tutorial/"
+Repository = "https://github.com/fritzip/flaskr-sqlalchemy.git"
+
+[project.optional-dependencies]
+test = ["pytest", "coverage"]
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+testpaths = ["tests"]
+filterwarnings = ["ignore::DeprecationWarning"]
+addopts = "-ra --color=yes"
+
+[tool.coverage.run]
+branch = true
+source = ["flaskr", "tests"]
